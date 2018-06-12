@@ -14,6 +14,11 @@ from elasticsearch import Elasticsearch, exceptions as es_exc
 
 filter_indexes = lambda data: [x for x in data if x['index'] not in ('.kibana',)]
 
+def get_index_doctypes(cli, index):
+    mappings = cli.indices.get_mapping(index=index)
+    return list(mappings[index]['mappings'].keys())
+
+
 def get_dictionaries(name=None, limit=10, offset=0, sort=None):  # noqa: E501
     """Get informations about provided dictionaries.
 
@@ -31,11 +36,10 @@ def get_dictionaries(name=None, limit=10, offset=0, sort=None):  # noqa: E501
     :rtype: Dictionaries
     """
     c = Elasticsearch(hosts='elastic')
-    ret = c.cat.indices(format='json', size=limit, _from=offset)
+    ret = c.cat.indices(format='json')[offset:offset+limit]
     ret = filter_indexes(ret)
     for i in ret:
-        mappings = c.indices.get_mapping(index=i['index'])
-        i['versions'] = list(mappings[i['index']]['mappings'].keys())
+        i['versions'] = get_index_doctypes(c, i['index'])
     return ret
 
 
@@ -51,10 +55,11 @@ def get_dictionary(dictionary_name):  # noqa: E501
     """
     c = Elasticsearch(hosts='elastic')
     ret = c.cat.indices(index=dictionary_name, format='json')[0]
+    ret['versions'] = get_index_doctypes(c, dictionary_name)
     return ret
 
 
-def get_dictionary_version(dictionary_name, version, name=None, limit=None, offset=None, sort=None):  # noqa: E501
+def get_dictionary_version(dictionary_name, version, name=None, limit=10, offset=0, sort=None):  # noqa: E501
     """Get entries from a dictionary.
 
     Retrieve paged entries from a Table.  # noqa: E501
@@ -76,12 +81,14 @@ def get_dictionary_version(dictionary_name, version, name=None, limit=None, offs
     """
     c = Elasticsearch(hosts='elastic')
     res = c.search(index=dictionary_name, doc_type=[version],
+                   size=limit, from_=offset,
                    body={"query": {"match_all": {}}})
     print(res)
     items = [ hit["_source"]["doc"] for hit in res['hits']['hits']]
     return {
         "items": items,
         "count": res['hits']['total'],
+        "offset_next": offset+limit
         }
 
 
