@@ -1,16 +1,16 @@
 ---
 swagger: "2.0"
 info:
-  description: "Questo servizio ritorna la data e l'ora attuali in UTC.\n\n#### Documentazione\n\
-    Il servizio Ora esatta ritorna l'ora del server in formato RFC5424 (syslog).\n\
-    \n`2018-12-30T12:23:32Z`\n\n##### Sottosezioni\nE' possibile utilizzare - con\
-    \ criterio - delle sottosezioni.\n\n#### Note\n\nIl servizio non richiede autenticazione,\
-    \ ma va' usato rispettando gli\nheader di throttling esposti in conformita' alle\
-    \ Linee Guida del Modello di interoperabilita'.\n\n#### Informazioni tecniche\
-    \ ed esempi\n\nEsempio:\n\n```\nhttp http://localhost:8443/datetime/v1/echo\n\
-    {\n  'datetime': '2018-12-30T12:23:32Z'\n}\n```\n"
-  version: "1.0.0"
-  title: "Ora esatta."
+  description: "Dictionaries are versioned key-value store that you can\n  retrieve\
+    \ via API. For each dictionary you can:\n  - get metadata infos\n  - retrieve\
+    \ a paged subset\n  - get a single entry via an unique key\n  - find entries by\
+    \ a given key (which could not be unique)\n\n  Dictionary structure is the following:\n\
+    \  - Dictionary: has a single name and many versions\n    - Table: it's a specific\
+    \ version of a dictionary. May\n        expire\n        - Entry: it's the actual\
+    \ data contained in a table.\n\nDespite http://zalando.github.io/restful-api-guidelines/index.html#160\n\
+    \    we use pagination as it's more intuitive for this use case.\n"
+  version: "0.0.1"
+  title: "Core Vocabularies API\n"
   termsOfService: "http://swagger.io/terms/"
   contact:
     name: "Roberto Polli"
@@ -19,41 +19,61 @@ info:
   license:
     name: "Apache 2.0"
     url: "http://www.apache.org/licenses/LICENSE-2.0.html"
-  x-api-id: "00000000-0000-0000-0000-000000000000"
-  x-audience:
-  - "public"
-host: "api.example.com"
-basePath: "/datetime/v1"
+  x-api-id: "b9ec7026-5da5-4db6-a959-fce72db5de64"
+  x-audience: "Definire qui l'audience delle API\n"
+host: "virtserver.swaggerhub.com"
+basePath: "/robipolli/core-vocabularies/0.0.1"
 tags:
+- name: "admins"
+  description: "Create and update dictionaries"
+  externalDocs:
+    url: "http://docs.my-api.com/pet-operations.htm"
 - name: "public"
-  description: "Retrieve informations"
+  description: "Retrieve dictionaries"
   externalDocs:
     url: "http://docs.my-api.com/pet-operations.htm"
 schemes:
 - "https"
 paths:
-  /echo:
+  /dictionaries:
     get:
       tags:
       - "public"
-      summary: "Ritorna un timestamp in formato RFC5424."
-      description: "Ritorna un timestamp in formato RFC5424\nprendendola dal server\
-        \ attuale.\n"
-      operationId: "get_echo"
+      summary: "Get informations about provided dictionaries."
+      description: "Shows a list of supported dictionaries.\n"
+      operationId: "get_dictionaries"
       produces:
-      - "application/problem+json"
-      parameters: []
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "query"
+        description: "The indexed key to search with."
+        required: false
+        type: "string"
+        x-example: "Latina"
+      - name: "limit"
+        in: "query"
+        description: "How many items to return at one time (max 100)"
+        required: false
+        type: "integer"
+        format: "int32"
+      - name: "offset"
+        in: "query"
+        description: "The zero-ary offset index into the results"
+        required: false
+        type: "integer"
+        format: "int32"
+      - name: "sort"
+        in: "query"
+        description: "Sorting order"
+        required: false
+        type: "string"
       responses:
         200:
-          description: "Il server ha ritornato il timestamp.\n"
+          description: "A list of Dictionaries.\nHeaders secondo http://zalando.github.io/restful-api-guidelines/index.html#132\n"
           schema:
-            $ref: "#/definitions/Timestampa"
+            $ref: "#/definitions/Dictionaries"
           headers:
-            Retry-After:
-              type: "integer"
-              format: "int32"
-              description: "Retry contacting the endpoint *at least* after seconds.\n\
-                See https://tools.ietf.org/html/rfc7231#section-7.1.3"
             X-RateLimit-Limit:
               type: "integer"
               format: "int32"
@@ -66,10 +86,274 @@ paths:
               type: "integer"
               format: "int32"
               description: "The number of seconds left in the current period"
+      x-swagger-router-controller: "swagger_server.controllers.public_controller"
+  /dictionaries/{dictionary_name}:
+    get:
+      tags:
+      - "public"
+      summary: "Get informations about a dictionary."
+      description: "Retrieve available dictionary version and URI.\n"
+      operationId: "get_dictionary"
+      produces:
+      - "application/problem+json"
+      parameters:
+      - name: "dictionary_name"
+        in: "path"
+        description: "The name of the dictionary"
+        required: true
+        type: "string"
+        x-example: "cities"
+      responses:
+        200:
+          description: "Retrieve information from a dictionary.\n"
+          schema:
+            $ref: "#/definitions/Dictionary"
+          headers:
+            X-RateLimit-Limit:
+              type: "integer"
+              format: "int32"
+              description: "The number of allowed requests in the current period"
+            X-RateLimit-Remaining:
+              type: "integer"
+              format: "int32"
+              description: "The number of remaining requests in the current period"
+            X-RateLimit-Reset:
+              type: "integer"
+              format: "int32"
+              description: "The number of seconds left in the current period"
+        400:
+          description: "Bad Request"
+          schema:
+            $ref: "#/definitions/inline_response_400"
+        404:
+          description: "Not Found"
+          schema:
+            $ref: "#/definitions/inline_response_400"
+        default:
+          description: "Unexpected error"
+          schema:
+            $ref: "#/definitions/inline_response_400"
+      x-swagger-router-controller: "swagger_server.controllers.public_controller"
+    post:
+      tags:
+      - "admins"
+      summary: "Upload a new (version of a) dictionary eventually creating\na new\
+        \ dictionary. The passed csv file contains a trailing\nline with the expected\
+        \ line count. If the schema does not match\nprevious version, an error is\
+        \ returned.\n"
+      operationId: "upload_dictionary"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "dictionary_name"
+        in: "path"
+        description: "The name of the dictionary"
+        required: true
+        type: "string"
+        x-example: "cities"
+      - in: "body"
+        name: "body"
+        description: "Use MarkDown here!"
+        required: true
+        schema:
+          $ref: "#/definitions/TableData"
+      responses:
+        201:
+          description: "A new version of the table have been created.\n"
+          schema:
+            $ref: "#/definitions/Table"
+        404:
+          description: "Not Found"
+          schema:
+            $ref: "#/definitions/inline_response_400"
+        default:
+          description: "Unexpected error"
+          schema:
+            $ref: "#/definitions/inline_response_400"
+      x-swagger-router-controller: "swagger_server.controllers.admins_controller"
+  /dictionaries/{dictionary_name}/meta:
+    get:
+      tags:
+      - "public"
+      summary: "Get meta informations about a dictionary."
+      description: "Retrieve available dictionary version and URI:\nfoo bar\n"
+      operationId: "get_dictionary_meta"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "dictionary_name"
+        in: "path"
+        description: "The name of the dictionary"
+        required: true
+        type: "string"
+        x-example: "cities"
+      responses:
+        200:
+          description: "Retrieve information from a dictionary.\n"
+          schema:
+            $ref: "#/definitions/Dictionary"
+          headers:
+            X-RateLimit-Limit:
+              type: "integer"
+              format: "int32"
+              description: "The number of allowed requests in the current period"
+            X-RateLimit-Remaining:
+              type: "integer"
+              format: "int32"
+              description: "The number of remaining requests in the current period"
+            X-RateLimit-Reset:
+              type: "integer"
+              format: "int32"
+              description: "The number of seconds left in the current period"
+        400:
+          description: "Bad Request"
+          schema:
+            $ref: "#/definitions/inline_response_400"
+        404:
+          description: "Not Found"
+          schema:
+            $ref: "#/definitions/inline_response_400"
+        default:
+          description: "Unexpected error"
+          schema:
+            $ref: "#/definitions/inline_response_400"
+      x-swagger-router-controller: "swagger_server.controllers.public_controller"
+  /dictionaries/{dictionary_name}/{version}:
+    get:
+      tags:
+      - "public"
+      summary: "Get entries from a dictionary."
+      description: "Retrieve paged entries from a Table.\n"
+      operationId: "get_dictionary"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "dictionary_name"
+        in: "path"
+        description: "The name of the dictionary"
+        required: true
+        type: "string"
+        x-example: "cities"
+      - name: "version"
+        in: "path"
+        description: "A specific version of a dictionary."
+        required: true
+        type: "integer"
+        x-example: 137
+      - name: "name"
+        in: "query"
+        description: "The indexed key to search with."
+        required: false
+        type: "string"
+        x-example: "Latina"
+      - name: "limit"
+        in: "query"
+        description: "How many items to return at one time (max 100)"
+        required: false
+        type: "integer"
+        format: "int32"
+      - name: "offset"
+        in: "query"
+        description: "The zero-ary offset index into the results"
+        required: false
+        type: "integer"
+        format: "int32"
+      - name: "sort"
+        in: "query"
+        description: "Sorting order"
+        required: false
+        type: "string"
+      responses:
+        200:
+          description: "Retrieve dictionary metadata\n"
+          schema:
+            $ref: "#/definitions/Entry"
+          headers:
+            X-RateLimit-Limit:
+              type: "integer"
+              format: "int32"
+              description: "The number of allowed requests in the current period"
+            X-RateLimit-Remaining:
+              type: "integer"
+              format: "int32"
+              description: "The number of remaining requests in the current period"
+            X-RateLimit-Reset:
+              type: "integer"
+              format: "int32"
+              description: "The number of seconds left in the current period"
+        400:
+          description: "Bad Request"
+          schema:
+            $ref: "#/definitions/inline_response_400"
+        404:
+          description: "Not Found"
+          schema:
+            $ref: "#/definitions/inline_response_400"
+        default:
+          description: "Unexpected error"
+          schema:
+            $ref: "#/definitions/inline_response_400"
+      x-swagger-router-controller: "swagger_server.controllers.public_controller"
+  /dictionaries/{dictionary_name}/{version}/{entry_key}:
+    get:
+      tags:
+      - "public"
+      summary: "Get a Table entry"
+      description: "Retrieve an entry from a Table."
+      operationId: "get_entry"
+      produces:
+      - "application/problem+json"
+      parameters:
+      - name: "dictionary_name"
+        in: "path"
+        description: "The name of the dictionary"
+        required: true
+        type: "string"
+        x-example: "cities"
+      - name: "version"
+        in: "path"
+        description: "A specific version of a dictionary."
+        required: true
+        type: "integer"
+        x-example: 137
+      - name: "entry_key"
+        in: "path"
+        description: "The entry key"
+        required: true
+        type: "string"
+        x-example: "E472-2007"
+      responses:
+        200:
+          description: "Returns the given entry.\n"
+          schema:
+            $ref: "#/definitions/Entries"
+          headers:
+            X-RateLimit-Limit:
+              type: "integer"
+              format: "int32"
+              description: "The number of allowed requests in the current period"
+            X-RateLimit-Remaining:
+              type: "integer"
+              format: "int32"
+              description: "The number of remaining requests in the current period"
+            X-RateLimit-Reset:
+              type: "integer"
+              format: "int32"
+              description: "The number of seconds left in the current period"
+        400:
+          description: "Bad Request"
+          schema:
+            $ref: "#/definitions/inline_response_400"
+        404:
+          description: "Not Found"
+          schema:
+            $ref: "#/definitions/inline_response_400"
         429:
           description: "Too many requests"
           schema:
-            $ref: "#/definitions/Problem"
+            $ref: "#/definitions/inline_response_400"
           headers:
             Retry-After:
               type: "integer"
@@ -91,7 +375,7 @@ paths:
         503:
           description: "Service Unavailable"
           schema:
-            $ref: "#/definitions/Problem"
+            $ref: "#/definitions/inline_response_400"
           headers:
             Retry-After:
               type: "integer"
@@ -101,9 +385,352 @@ paths:
         default:
           description: "Unexpected error"
           schema:
-            $ref: "#/definitions/Problem"
+            $ref: "#/definitions/inline_response_400"
+      x-swagger-router-controller: "swagger_server.controllers.public_controller"
+  /table/{table_uuid}/:
+    get:
+      tags:
+      - "public"
+      summary: "Get entries from a given table."
+      description: "Retrieve paged entries from a Table.\n"
+      operationId: "get_table_entries"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "table_uuid"
+        in: "path"
+        description: "The table uuid"
+        required: true
+        type: "string"
+        x-example: "2b356821-868e-4274-9c8e-ca119dd097df"
+      - name: "name"
+        in: "query"
+        description: "The indexed key to search with."
+        required: false
+        type: "string"
+        x-example: "Latina"
+      - name: "limit"
+        in: "query"
+        description: "How many items to return at one time (max 100)"
+        required: false
+        type: "integer"
+        format: "int32"
+      - name: "offset"
+        in: "query"
+        description: "The zero-ary offset index into the results"
+        required: false
+        type: "integer"
+        format: "int32"
+      - name: "sort"
+        in: "query"
+        description: "Sorting order"
+        required: false
+        type: "string"
+      responses:
+        200:
+          description: "Retrieve table data\n"
+          schema:
+            $ref: "#/definitions/Entries"
+          headers:
+            X-RateLimit-Limit:
+              type: "integer"
+              format: "int32"
+              description: "The number of allowed requests in the current period"
+            X-RateLimit-Remaining:
+              type: "integer"
+              format: "int32"
+              description: "The number of remaining requests in the current period"
+            X-RateLimit-Reset:
+              type: "integer"
+              format: "int32"
+              description: "The number of seconds left in the current period"
+        400:
+          description: "Bad Request"
+          schema:
+            $ref: "#/definitions/inline_response_400"
+        404:
+          description: "Not Found"
+          schema:
+            $ref: "#/definitions/inline_response_400"
+        default:
+          description: "Unexpected error"
+          schema:
+            $ref: "#/definitions/inline_response_400"
+      x-swagger-router-controller: "swagger_server.controllers.public_controller"
+  /table/{table_uuid}/{entry_key}:
+    get:
+      tags:
+      - "public"
+      summary: "Get a Table entry"
+      description: "Retrieve an entry from a Table."
+      operationId: "get_entry_by_table"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "table_uuid"
+        in: "path"
+        description: "The table uuid"
+        required: true
+        type: "string"
+        x-example: "2b356821-868e-4274-9c8e-ca119dd097df"
+      - name: "entry_key"
+        in: "path"
+        description: "The entry key"
+        required: true
+        type: "string"
+        x-example: "E472-2007"
+      responses:
+        200:
+          description: "Returns the given entry.\n"
+          schema:
+            $ref: "#/definitions/Entries"
+          headers:
+            X-RateLimit-Limit:
+              type: "integer"
+              format: "int32"
+              description: "The number of allowed requests in the current period"
+            X-RateLimit-Remaining:
+              type: "integer"
+              format: "int32"
+              description: "The number of remaining requests in the current period"
+            X-RateLimit-Reset:
+              type: "integer"
+              format: "int32"
+              description: "The number of seconds left in the current period"
+        400:
+          description: "Bad Request"
+          schema:
+            $ref: "#/definitions/inline_response_400"
+        404:
+          description: "Not Found"
+          schema:
+            $ref: "#/definitions/inline_response_400"
+        429:
+          description: "Too many requests"
+          schema:
+            $ref: "#/definitions/inline_response_400"
+          headers:
+            Retry-After:
+              type: "integer"
+              format: "int32"
+              description: "Retry contacting the endpoint *at least* after seconds.\n\
+                See https://tools.ietf.org/html/rfc7231#section-7.1.3"
+            X-RateLimit-Limit:
+              type: "integer"
+              format: "int32"
+              description: "The number of allowed requests in the current period"
+            X-RateLimit-Remaining:
+              type: "integer"
+              format: "int32"
+              description: "The number of remaining requests in the current period"
+            X-RateLimit-Reset:
+              type: "integer"
+              format: "int32"
+              description: "The number of seconds left in the current period"
+        503:
+          description: "Service Unavailable"
+          schema:
+            $ref: "#/definitions/inline_response_400"
+          headers:
+            Retry-After:
+              type: "integer"
+              format: "int32"
+              description: "Retry contacting the endpoint *at least* after seconds.\n\
+                See https://tools.ietf.org/html/rfc7231#section-7.1.3"
+        default:
+          description: "Unexpected error"
+          schema:
+            $ref: "#/definitions/inline_response_400"
+      x-swagger-router-controller: "swagger_server.controllers.public_controller"
+  /tables:
+    get:
+      tags:
+      - "public"
+      summary: "Get informations about exiting tables."
+      description: "Shows a list of supported tables matching the given name.\n"
+      operationId: "get_tables"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "dictionary_name"
+        in: "query"
+        description: "The name of the dictionary"
+        required: false
+        type: "string"
+        x-example: "cities"
+      - name: "limit"
+        in: "query"
+        description: "How many items to return at one time (max 100)"
+        required: false
+        type: "integer"
+        format: "int32"
+      - name: "offset"
+        in: "query"
+        description: "The zero-ary offset index into the results"
+        required: false
+        type: "integer"
+        format: "int32"
+      - name: "sort"
+        in: "query"
+        description: "Sorting order"
+        required: false
+        type: "string"
+      responses:
+        200:
+          description: "A list of Tables.\n"
+          schema:
+            $ref: "#/definitions/Tables"
+          headers:
+            X-RateLimit-Limit:
+              type: "integer"
+              format: "int32"
+              description: "The number of allowed requests in the current period"
+            X-RateLimit-Remaining:
+              type: "integer"
+              format: "int32"
+              description: "The number of remaining requests in the current period"
+            X-RateLimit-Reset:
+              type: "integer"
+              format: "int32"
+              description: "The number of seconds left in the current period"
       x-swagger-router-controller: "swagger_server.controllers.public_controller"
 definitions:
+  Dictionaries:
+    required:
+    - "offset"
+    - "offset_next"
+    properties:
+      item:
+        type: "array"
+        items:
+          $ref: "#/definitions/Dictionary"
+      offset:
+        type: "integer"
+        format: "int32"
+        example: 5
+      offset_next:
+        type: "integer"
+        format: "int32"
+        example: 10
+    example:
+      item:
+      - last_version: 134
+        name: "cities"
+        description: "Which data is contained in the dictionary? Cities? Foreign countries?\n\
+          Healtcare codes?"
+        uri: "http://dictionaries-beta.api.example.com/dictionaries/cities"
+      - last_version: 134
+        name: "cities"
+        description: "Which data is contained in the dictionary? Cities? Foreign countries?\n\
+          Healtcare codes?"
+        uri: "http://dictionaries-beta.api.example.com/dictionaries/cities"
+      offset_next: 10
+      offset: 5
+  Dictionary:
+    required:
+    - "description"
+    - "last_version"
+    - "name"
+    - "uri"
+    properties:
+      description:
+        type: "string"
+        example: "Which data is contained in the dictionary? Cities? Foreign countries?\n\
+          Healtcare codes?"
+      last_version:
+        type: "integer"
+        example: 134
+      name:
+        type: "string"
+        example: "cities"
+      uri:
+        type: "string"
+        format: "uri"
+        example: "http://dictionaries-beta.api.example.com/dictionaries/cities"
+    description: "Reference to a dictionary, that is a multi-versioned table.\n"
+    example:
+      last_version: 134
+      name: "cities"
+      description: "Which data is contained in the dictionary? Cities? Foreign countries?\n\
+        Healtcare codes?"
+      uri: "http://dictionaries-beta.api.example.com/dictionaries/cities"
+  Entries:
+    required:
+    - "offset"
+    - "offset_next"
+    properties:
+      item:
+        type: "array"
+        items:
+          $ref: "#/definitions/Entry"
+      offset:
+        type: "integer"
+        format: "int32"
+        example: 50
+        description: "Current offset (eg. entries 50 to 99)"
+      offset_next:
+        type: "integer"
+        format: "int32"
+        example: 100
+        description: "Offset for the next page (eg. entries from 100 to 149).\nThis\
+          \ could be a link too in HATEOAS."
+      table_uri:
+        type: "string"
+        format: "uri"
+        example: "http://dictionaries-beta.api.example.com/table/2b356821-868e-4274-9c8e-ca119dd097df"
+    example:
+      item:
+      - data:
+          codice_catastale: "E472"
+          codice_istat: 59011.0
+          nome: "Latina"
+          nome_traslitterato: "LATINA"
+          provincia: "LT"
+        name: "Latina"
+        key: "E472-2007"
+      - data:
+          codice_catastale: "E472"
+          codice_istat: 59011.0
+          nome: "Latina"
+          nome_traslitterato: "LATINA"
+          provincia: "LT"
+        name: "Latina"
+        key: "E472-2007"
+      offset_next: 100
+      offset: 50
+      table_uri: "http://dictionaries-beta.api.example.com/table/2b356821-868e-4274-9c8e-ca119dd097df"
+  Entry:
+    required:
+    - "data"
+    - "key"
+    properties:
+      data:
+        type: "object"
+        example:
+          codice_catastale: "E472"
+          codice_istat: 59011.0
+          nome: "Latina"
+          nome_traslitterato: "LATINA"
+          provincia: "LT"
+        properties: {}
+      key:
+        type: "string"
+        example: "E472-2007"
+        description: "An unique ID for the entry in the given table. This may have\n\
+          \  a semantic meaning or could be just an UUID."
+      name:
+        type: "string"
+        example: "Latina"
+        description: "Searchable string."
+    example:
+      data:
+        codice_catastale: "E472"
+        codice_istat: 59011.0
+        nome: "Latina"
+        nome_traslitterato: "LATINA"
+        provincia: "LT"
+      name: "Latina"
+      key: "E472-2007"
   Problem:
     type: "object"
     properties:
@@ -139,22 +766,284 @@ definitions:
           it SHOULD provide human-readable documentation for the problem type\n(e.g.,\
           \ using HTML).\n"
         default: "about:blank"
-  Timestampa:
-    type: "object"
+  Table:
+    required:
+    - "name"
+    - "ttl"
+    - "uri"
+    - "uuid"
+    - "version"
     properties:
-      timestamp:
+      name:
         type: "string"
-        format: "date-time"
-        example: "2018-12-30T12:23:32Z"
-    description: "Un Timestamp in RFC5424"
+        example: "cities"
+      table_uri:
+        type: "string"
+        format: "uri"
+        example: "http://dictionaries-beta.api.example.com/table/2b356821-868e-4274-9c8e-ca119dd097df"
+      ttl:
+        type: "integer"
+        format: "int32"
+        description: "Seconds to the invalidation of the API."
+      uri:
+        type: "string"
+        format: "uri"
+        example: "http://dictionaries-beta.api.example.com/dictionaries/cities/137"
+      uuid:
+        type: "string"
+        format: "uuid"
+        example: "2b356821-868e-4274-9c8e-ca119dd097df"
+      version:
+        type: "integer"
+        example: 137
+    description: "Versioned dictionary.\n"
+    example:
+      table_uri: "http://dictionaries-beta.api.example.com/table/2b356821-868e-4274-9c8e-ca119dd097df"
+      name: "cities"
+      ttl: 0
+      uri: "http://dictionaries-beta.api.example.com/dictionaries/cities/137"
+      uuid: "2b356821-868e-4274-9c8e-ca119dd097df"
+      version: 137
+  TableData:
+    required:
+    - "data"
+    - "name"
+    - "ttl"
+    properties:
+      data:
+        type: "array"
+        items:
+          $ref: "#/definitions/Entry"
+      name:
+        type: "string"
+        example: "cities"
+      ttl:
+        type: "integer"
+        format: "int32"
+        description: "Seconds to the invalidation of the API."
+    description: "Dictionary data, freely inspired by  https://github.com/italia/daf-ontologie-vocabolari-controllati/\n"
+    example:
+      data:
+      - data:
+          codice_catastale: "E472"
+          codice_istat: 59011.0
+          nome: "Latina"
+          nome_traslitterato: "LATINA"
+          provincia: "LT"
+        name: "Latina"
+        key: "E472-2007"
+      - data:
+          codice_catastale: "E472"
+          codice_istat: 59011.0
+          nome: "Latina"
+          nome_traslitterato: "LATINA"
+          provincia: "LT"
+        name: "Latina"
+        key: "E472-2007"
+      name: "cities"
+      ttl: 0
+  Tables:
+    required:
+    - "offset"
+    - "offset_next"
+    properties:
+      item:
+        type: "array"
+        items:
+          $ref: "#/definitions/Table"
+      offset:
+        type: "integer"
+        format: "int32"
+        example: 5
+      offset_next:
+        type: "integer"
+        format: "int32"
+        example: 10
+    example:
+      item:
+      - table_uri: "http://dictionaries-beta.api.example.com/table/2b356821-868e-4274-9c8e-ca119dd097df"
+        name: "cities"
+        ttl: 0
+        uri: "http://dictionaries-beta.api.example.com/dictionaries/cities/137"
+        uuid: "2b356821-868e-4274-9c8e-ca119dd097df"
+        version: 137
+      - table_uri: "http://dictionaries-beta.api.example.com/table/2b356821-868e-4274-9c8e-ca119dd097df"
+        name: "cities"
+        ttl: 0
+        uri: "http://dictionaries-beta.api.example.com/dictionaries/cities/137"
+        uuid: "2b356821-868e-4274-9c8e-ca119dd097df"
+        version: 137
+      offset_next: 10
+      offset: 5
+  inline_response_400:
+    properties:
+      detail:
+        type: "string"
+        example: "Connection to database timed out"
+        description: "A human readable explanation specific to this occurrence of\
+          \ the\nproblem.\n"
+      instance:
+        type: "string"
+        format: "uri"
+        description: "An absolute URI that identifies the specific occurrence of the\
+          \ problem.\nIt may or may not yield further information if dereferenced.\n"
+      status:
+        type: "integer"
+        format: "int32"
+        example: 503
+        description: "The HTTP status code generated by the origin server for this\
+          \ occurrence\nof the problem.\n"
+        minimum: 100
+        maximum: 600
+        exclusiveMaximum: true
+      title:
+        type: "string"
+        description: "A short, summary of the problem type. Written in english and\
+          \ readable\nfor engineers (usually not suited for non technical stakeholders\
+          \ and\nnot localized); example: Service Unavailable\n"
+      type:
+        type: "string"
+        format: "uri"
+        example: "https://tools.ietf.org/html/rfc7231#section-6.6.4"
+        description: "An absolute URI that identifies the problem type.  When dereferenced,\n\
+          it SHOULD provide human-readable documentation for the problem type\n(e.g.,\
+          \ using HTML).\n"
+        default: "about:blank"
 x-components:
+  parameters:
+    dictionary_name:
+      description: "The name of the dictionary"
+      in: "query"
+      name: "dictionary_name"
+      type: "string"
+      x-example: "cities"
+    dictionary_name_path:
+      description: "The name of the dictionary"
+      in: "path"
+      name: "dictionary_name"
+      required: true
+      type: "string"
+      x-example: "cities"
+    entry_key_path:
+      description: "The entry key"
+      in: "path"
+      name: "entry_key"
+      required: true
+      type: "string"
+      x-example: "E472-2007"
+    limit:
+      description: "How many items to return at one time (max 100)"
+      format: "int32"
+      in: "query"
+      name: "limit"
+      type: "integer"
+    name:
+      description: "The indexed key to search with."
+      in: "query"
+      name: "name"
+      required: false
+      type: "string"
+      x-example: "Latina"
+    offset:
+      description: "The zero-ary offset index into the results"
+      format: "int32"
+      in: "query"
+      name: "offset"
+      type: "integer"
+    sort:
+      description: "Sorting order"
+      in: "query"
+      name: "sort"
+      type: "string"
+    table_uuid_path:
+      description: "The table uuid"
+      in: "path"
+      name: "table_uuid"
+      required: true
+      type: "string"
+      x-example: "2b356821-868e-4274-9c8e-ca119dd097df"
+    version_path:
+      description: "A specific version of a dictionary."
+      in: "path"
+      name: "version"
+      required: true
+      type: "integer"
+      x-example: 137
   responses:
+    400BadRequest:
+      description: "Bad Request"
+      schema:
+        properties:
+          detail:
+            description: "A human readable explanation specific to this occurrence\
+              \ of the\nproblem.\n"
+            example: "Connection to database timed out"
+            type: "string"
+          instance:
+            description: "An absolute URI that identifies the specific occurrence\
+              \ of the problem.\nIt may or may not yield further information if dereferenced.\n"
+            format: "uri"
+            type: "string"
+          status:
+            description: "The HTTP status code generated by the origin server for\
+              \ this occurrence\nof the problem.\n"
+            example: 503
+            exclusiveMaximum: true
+            format: "int32"
+            maximum: 600
+            minimum: 100
+            type: "integer"
+          title:
+            description: "A short, summary of the problem type. Written in english\
+              \ and readable\nfor engineers (usually not suited for non technical\
+              \ stakeholders and\nnot localized); example: Service Unavailable\n"
+            type: "string"
+          type:
+            default: "about:blank"
+            description: "An absolute URI that identifies the problem type.  When\
+              \ dereferenced,\nit SHOULD provide human-readable documentation for\
+              \ the problem type\n(e.g., using HTML).\n"
+            example: "https://tools.ietf.org/html/rfc7231#section-6.6.4"
+            format: "uri"
+            type: "string"
+        type: "object"
     404NotFound:
-      content:
-        application/problem+json:
-          schema:
-            $ref: "#/definitions/Problem"
       description: "Not Found"
+      schema:
+        properties:
+          detail:
+            description: "A human readable explanation specific to this occurrence\
+              \ of the\nproblem.\n"
+            example: "Connection to database timed out"
+            type: "string"
+          instance:
+            description: "An absolute URI that identifies the specific occurrence\
+              \ of the problem.\nIt may or may not yield further information if dereferenced.\n"
+            format: "uri"
+            type: "string"
+          status:
+            description: "The HTTP status code generated by the origin server for\
+              \ this occurrence\nof the problem.\n"
+            example: 503
+            exclusiveMaximum: true
+            format: "int32"
+            maximum: 600
+            minimum: 100
+            type: "integer"
+          title:
+            description: "A short, summary of the problem type. Written in english\
+              \ and readable\nfor engineers (usually not suited for non technical\
+              \ stakeholders and\nnot localized); example: Service Unavailable\n"
+            type: "string"
+          type:
+            default: "about:blank"
+            description: "An absolute URI that identifies the problem type.  When\
+              \ dereferenced,\nit SHOULD provide human-readable documentation for\
+              \ the problem type\n(e.g., using HTML).\n"
+            example: "https://tools.ietf.org/html/rfc7231#section-6.6.4"
+            format: "uri"
+            type: "string"
+        type: "object"
     429TooManyRequests:
       description: "Too many requests"
       headers:
@@ -176,7 +1065,40 @@ x-components:
           format: "int32"
           type: "integer"
       schema:
-        $ref: "#/definitions/Problem"
+        properties:
+          detail:
+            description: "A human readable explanation specific to this occurrence\
+              \ of the\nproblem.\n"
+            example: "Connection to database timed out"
+            type: "string"
+          instance:
+            description: "An absolute URI that identifies the specific occurrence\
+              \ of the problem.\nIt may or may not yield further information if dereferenced.\n"
+            format: "uri"
+            type: "string"
+          status:
+            description: "The HTTP status code generated by the origin server for\
+              \ this occurrence\nof the problem.\n"
+            example: 503
+            exclusiveMaximum: true
+            format: "int32"
+            maximum: 600
+            minimum: 100
+            type: "integer"
+          title:
+            description: "A short, summary of the problem type. Written in english\
+              \ and readable\nfor engineers (usually not suited for non technical\
+              \ stakeholders and\nnot localized); example: Service Unavailable\n"
+            type: "string"
+          type:
+            default: "about:blank"
+            description: "An absolute URI that identifies the problem type.  When\
+              \ dereferenced,\nit SHOULD provide human-readable documentation for\
+              \ the problem type\n(e.g., using HTML).\n"
+            example: "https://tools.ietf.org/html/rfc7231#section-6.6.4"
+            format: "uri"
+            type: "string"
+        type: "object"
     503ServiceUnavailable:
       description: "Service Unavailable"
       headers:
@@ -186,16 +1108,78 @@ x-components:
           format: "int32"
           type: "integer"
       schema:
-        $ref: "#/definitions/Problem"
+        properties:
+          detail:
+            description: "A human readable explanation specific to this occurrence\
+              \ of the\nproblem.\n"
+            example: "Connection to database timed out"
+            type: "string"
+          instance:
+            description: "An absolute URI that identifies the specific occurrence\
+              \ of the problem.\nIt may or may not yield further information if dereferenced.\n"
+            format: "uri"
+            type: "string"
+          status:
+            description: "The HTTP status code generated by the origin server for\
+              \ this occurrence\nof the problem.\n"
+            example: 503
+            exclusiveMaximum: true
+            format: "int32"
+            maximum: 600
+            minimum: 100
+            type: "integer"
+          title:
+            description: "A short, summary of the problem type. Written in english\
+              \ and readable\nfor engineers (usually not suited for non technical\
+              \ stakeholders and\nnot localized); example: Service Unavailable\n"
+            type: "string"
+          type:
+            default: "about:blank"
+            description: "An absolute URI that identifies the problem type.  When\
+              \ dereferenced,\nit SHOULD provide human-readable documentation for\
+              \ the problem type\n(e.g., using HTML).\n"
+            example: "https://tools.ietf.org/html/rfc7231#section-6.6.4"
+            format: "uri"
+            type: "string"
+        type: "object"
     default:
       description: "Unexpected error"
       schema:
-        $ref: "#/definitions/Problem"
+        properties:
+          detail:
+            description: "A human readable explanation specific to this occurrence\
+              \ of the\nproblem.\n"
+            example: "Connection to database timed out"
+            type: "string"
+          instance:
+            description: "An absolute URI that identifies the specific occurrence\
+              \ of the problem.\nIt may or may not yield further information if dereferenced.\n"
+            format: "uri"
+            type: "string"
+          status:
+            description: "The HTTP status code generated by the origin server for\
+              \ this occurrence\nof the problem.\n"
+            example: 503
+            exclusiveMaximum: true
+            format: "int32"
+            maximum: 600
+            minimum: 100
+            type: "integer"
+          title:
+            description: "A short, summary of the problem type. Written in english\
+              \ and readable\nfor engineers (usually not suited for non technical\
+              \ stakeholders and\nnot localized); example: Service Unavailable\n"
+            type: "string"
+          type:
+            default: "about:blank"
+            description: "An absolute URI that identifies the problem type.  When\
+              \ dereferenced,\nit SHOULD provide human-readable documentation for\
+              \ the problem type\n(e.g., using HTML).\n"
+            example: "https://tools.ietf.org/html/rfc7231#section-6.6.4"
+            format: "uri"
+            type: "string"
+        type: "object"
   headers:
-    Retry-After:
-      description: "Retry contacting the endpoint *at least* after seconds.\nSee https://tools.ietf.org/html/rfc7231#section-7.1.3"
-      format: "int32"
-      type: "integer"
     X-RateLimit-Limit:
       description: "The number of allowed requests in the current period"
       format: "int32"

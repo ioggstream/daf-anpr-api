@@ -30,9 +30,12 @@ yamllint: $(YAML)
 # Create a simple project starting from OpenAPI v3 spec
 #  in simple.yaml.
 prj-simple-generate: openapi/core-vocabularies.yaml
+	./scripts/yaml-resolver.sh $< /dev/fd/1  > /tmp/openapi-resolved.yaml
+
+
 	# Convert OpenAPI v3 to a temporary Swagger 2.0 using
 	#  docker image ioggstream/api-spec-converter
-	./scripts/openapi2swagger.sh openapi/core-vocabularies.yaml > /tmp/swagger.yaml
+	./scripts/openapi2swagger.sh /tmp/openapi-resolved.yaml > /tmp/swagger.yaml
 
 	# Generate a flask client from v2 spec using
 	#  docker image swaggerapi/swagger-codegen-cli
