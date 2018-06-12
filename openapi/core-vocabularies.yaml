@@ -388,9 +388,9 @@ components:
       in: path
       required: true
       description: A specific version of a dictionary.
-      example: 137
+      example: v127
       schema:
-        type: integer
+        type: string
   headers:
     X-RateLimit-Limit:
       $ref: https://teamdigitale.github.io/openapi/headers/v3.yaml#/X-RateLimit-Limit

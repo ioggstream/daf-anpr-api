@@ -29,7 +29,7 @@ yamllint: $(YAML)
 
 # Create a simple project starting from OpenAPI v3 spec
 #  in simple.yaml.
-prj-simple-generate: openapi/core-vocabularies.yaml
+prj-simple/swagger_server/swagger/swagger.yaml: openapi/core-vocabularies.yaml
 	./scripts/yaml-resolver.sh $< /dev/fd/1  > /tmp/openapi-resolved.yaml
 
 
@@ -41,15 +41,10 @@ prj-simple-generate: openapi/core-vocabularies.yaml
 	#  docker image swaggerapi/swagger-codegen-cli
 	./scripts/generate-flask.sh /tmp/swagger.yaml  ./prj-simple/
 
-prj-simple: prj-simple-generate
+app-test: prj-simple/swagger_server/swagger/swagger.yaml
 	docker-compose up --build test
 
-
-prj-simple-quickstart: prj-simple-generate
-	# Revert files changed by the codegen.
-	git checkout -- prj-simple
-	# Test all
-	docker-compose up --build test
+app-run: prj-simple/swagger_server/swagger/swagger.yaml
 	# Build and run the application
-	docker-compose up simple
+	docker-compose up --build simple
 

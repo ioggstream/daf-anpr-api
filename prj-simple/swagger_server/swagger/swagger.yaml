@@ -173,7 +173,7 @@ paths:
           schema:
             $ref: "#/definitions/inline_response_400"
       x-swagger-router-controller: "swagger_server.controllers.admins_controller"
-  /dictionaries-no/{dictionary_name}/meta:
+  /dictionaries/{dictionary_name}/meta:
     get:
       tags:
       - "public"
@@ -241,7 +241,7 @@ paths:
         description: "A specific version of a dictionary."
         required: true
         type: "string"
-        x-example: 137
+        x-example: "v127"
       - name: "name"
         in: "query"
         description: "The indexed key to search with."
@@ -316,8 +316,8 @@ paths:
         in: "path"
         description: "A specific version of a dictionary."
         required: true
-        type: "integer"
-        x-example: 137
+        type: "string"
+        x-example: "v127"
       - name: "entry_key"
         in: "path"
         description: "The entry key"
@@ -968,7 +968,7 @@ x-components:
       name: "version"
       required: true
       type: "string"
-      x-example: 137
+      x-example: "v127"
   responses:
     400BadRequest:
       description: "Bad Request"
