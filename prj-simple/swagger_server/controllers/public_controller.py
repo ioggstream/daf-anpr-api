@@ -50,7 +50,7 @@ def get_dictionary(dictionary_name):  # noqa: E501
     return ret
 
 
-def get_dictionary_version(dictionary_name, version, name=None, limit=None, offset=None, sort=None):  # noqa: E501
+def get_dictionary_version(dictionary_name, version, name=None, limit=10, offset=0, sort=None):  # noqa: E501
     """Get entries from a dictionary.
 
     Retrieve paged entries from a Table.  # noqa: E501
@@ -70,7 +70,14 @@ def get_dictionary_version(dictionary_name, version, name=None, limit=None, offs
 
     :rtype: Entry
     """
-    return 'do some magic!'
+    res = c.search(index=dictionary_name, size=limit, doc_type=[version],
+                   body={"query": {"match_all": {}}})
+    items = [ hit["_source"]["doc"] for hit in res['hits']['hits']]
+    return {
+        "items": items,
+        "count": res['hits']['total'],
+        "next": offset + limit,
+        }
 
 
 def get_dictionary_meta(dictionary_name):  # noqa: E501
@@ -83,6 +90,9 @@ def get_dictionary_meta(dictionary_name):  # noqa: E501
 
     :rtype: Dictionary
     """
+    c = Elasticsearch(hosts='elastic')
+    entry = c.get(index=dictionary_name, id=entry_key, doc_type=version)
+
     return 'do some magic!'
 
 
@@ -100,7 +110,9 @@ def get_entry(dictionary_name, version, entry_key):  # noqa: E501
 
     :rtype: Entries
     """
-    return 'do some magic!'
+    c = Elasticsearch(hosts='elastic')
+    entry = c.get(index=dictionary_name, id=entry_key, doc_type=version)
+    return entry['_source']['doc']
 
 
 def get_entry_by_table(table_uuid, entry_key):  # noqa: E501
