@@ -9,11 +9,12 @@ from swagger_server.models.inline_response400 import InlineResponse400  # noqa: 
 from swagger_server.models.tables import Tables  # noqa: E501
 from swagger_server import util
 
-from elasticsearch import Elasticsearch
+from connexion import problem
+from elasticsearch import Elasticsearch, exceptions as es_exc
 
 filter_indexes = lambda data: [x for x in data if x['index'] not in ('.kibana',)]
 
-def get_dictionaries(name=None, limit=None, offset=None, sort=None):  # noqa: E501
+def get_dictionaries(name=None, limit=10, offset=0, sort=None):  # noqa: E501
     """Get informations about provided dictionaries.
 
     Shows a list of supported dictionaries.  # noqa: E501
@@ -30,8 +31,11 @@ def get_dictionaries(name=None, limit=None, offset=None, sort=None):  # noqa: E5
     :rtype: Dictionaries
     """
     c = Elasticsearch(hosts='elastic')
-    ret = c.cat.indices(format='json')
+    ret = c.cat.indices(format='json', size=limit, _from=offset)
     ret = filter_indexes(ret)
+    for i in ret:
+        mappings = c.indices.get_mapping(index=i['index'])
+        i['versions'] = list(mappings[i['index']]['mappings'].keys())
     return ret
 
 
@@ -50,7 +54,7 @@ def get_dictionary(dictionary_name):  # noqa: E501
     return ret
 
 
-def get_dictionary_version(dictionary_name, version, name=None, limit=10, offset=0, sort=None):  # noqa: E501
+def get_dictionary_version(dictionary_name, version, name=None, limit=None, offset=None, sort=None):  # noqa: E501
     """Get entries from a dictionary.
 
     Retrieve paged entries from a Table.  # noqa: E501
@@ -70,13 +74,14 @@ def get_dictionary_version(dictionary_name, version, name=None, limit=10, offset
 
     :rtype: Entry
     """
-    res = c.search(index=dictionary_name, size=limit, doc_type=[version],
+    c = Elasticsearch(hosts='elastic')
+    res = c.search(index=dictionary_name, doc_type=[version],
                    body={"query": {"match_all": {}}})
+    print(res)
     items = [ hit["_source"]["doc"] for hit in res['hits']['hits']]
     return {
         "items": items,
         "count": res['hits']['total'],
-        "next": offset + limit,
         }
 
 
@@ -90,6 +95,7 @@ def get_dictionary_meta(dictionary_name):  # noqa: E501
 
     :rtype: Dictionary
     """
+    raise NotImplementedError(dictionary_name)
     c = Elasticsearch(hosts='elastic')
     entry = c.get(index=dictionary_name, id=entry_key, doc_type=version)
 
@@ -111,7 +117,12 @@ def get_entry(dictionary_name, version, entry_key):  # noqa: E501
     :rtype: Entries
     """
     c = Elasticsearch(hosts='elastic')
-    entry = c.get(index=dictionary_name, id=entry_key, doc_type=version)
+    try:
+        entry = c.get(index=dictionary_name, id=entry_key, doc_type=version)
+    except es_exc.NotFoundError:
+        return problem(status=404, title=f"Entry not found",
+                       detail=f"Entry id: {entry_key} not found in {dictionary_name}/{version}") 
+    
     return entry['_source']['doc']
 
 
