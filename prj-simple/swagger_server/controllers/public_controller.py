@@ -9,7 +9,7 @@ from swagger_server.models.inline_response400 import InlineResponse400  # noqa: 
 from swagger_server.models.tables import Tables  # noqa: E501
 from swagger_server import util
 
-from elasticsearch import ElasticSearch
+from elasticsearch import Elasticsearch
 
 filter_indexes = lambda data: [x for x in data if x['index'] not in ('.kibana',)]
 
@@ -50,7 +50,7 @@ def get_dictionary(dictionary_name):  # noqa: E501
     return ret
 
 
-def get_dictionary_0(dictionary_name, version, name=None, limit=None, offset=None, sort=None):  # noqa: E501
+def get_dictionary_version(dictionary_name, version, name=None, limit=None, offset=None, sort=None):  # noqa: E501
     """Get entries from a dictionary.
 
     Retrieve paged entries from a Table.  # noqa: E501

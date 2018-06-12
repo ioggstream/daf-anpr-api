@@ -226,7 +226,7 @@ paths:
       - "public"
       summary: "Get entries from a dictionary."
       description: "Retrieve paged entries from a Table.\n"
-      operationId: "get_dictionary"
+      operationId: "get_dictionary_version"
       produces:
       - "application/json"
       parameters:

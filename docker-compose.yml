@@ -35,7 +35,6 @@ services:
     entrypoint: /bin/sh
     command: -c 'pip install tox && tox'
   
-  
   simple:
     build: prj-simple
     volumes:
@@ -43,4 +42,11 @@ services:
     ports:
     - "8080:8080"
     - "8443:8443"
+  
+  dev:
+    build: prj-simple
+    volumes:
+    - ./prj-simple:/code
+    entrypoint: /bin/sh
+    command: -c 'while true; do sleep 1; done'
   
