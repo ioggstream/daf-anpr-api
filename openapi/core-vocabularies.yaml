@@ -469,6 +469,11 @@ components:
           type: string
           format: uri
           example: http://dictionaries-beta.api.example.com/table/2b356821-868e-4274-9c8e-ca119dd097df
+        count:
+          type: integer
+          format: int32
+          description: Total entries count, independently of limit.
+          example: 1231
         offset:
           type: integer
           format: int32
