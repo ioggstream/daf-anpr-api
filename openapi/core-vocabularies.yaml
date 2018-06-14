@@ -320,7 +320,7 @@ components:
       - offset
       - offset_next
       properties:
-        item:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/Dictionary'

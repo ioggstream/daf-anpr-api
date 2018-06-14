@@ -5,7 +5,7 @@ from swagger_server.models.inline_response400 import InlineResponse400  # noqa: 
 from swagger_server.models.table import Table  # noqa: E501
 from swagger_server.models.table_data import TableData  # noqa: E501
 from swagger_server import util, tools
-
+from swagger_server.controllers.public_controller import get_dictionary
 
 from elasticsearch import Elasticsearch, helpers
 import json
@@ -26,20 +26,21 @@ def upload_dictionary(dictionary_name, body):  # noqa: E501
     """
     if connexion.request.is_json:
         body = connexion.request.get_json()  # noqa: E501
-    d = datetime.now()
+        print(body)
+    
     es = Elasticsearch(hosts='elastic')
 
-    if version == 'latest':
-        raise ValueError("""Version should not be "latest".""")
+    #if version == 'latest':
+    #    raise ValueError("""Version should not be "latest".""")
     
     versions = tools.get_index_doctypes(es, dictionary_name)
-    new_version = d.isoformat()[:19]
-    if versions[-1] > new_version:
+    new_version = datetime.now().isoformat()[:19]
+    if versions and (versions[-1] > new_version):
         raise NotImplementedError(f"Version too low: {versions} vs {new_version}")
-    loader = DataLoader('elastic', dictionary_name, new_version, args.id_col)
-    if args.action == 'index':
-        inserted, errors = loader.index_data(body)
-        print('loaded {} records'.format(inserted))
+    
+    loader = DataLoader('elastic', dictionary_name, new_version, 'codistat')
+    inserted, errors = loader.index_data(body)
+    return get_dictionary(dictionary_name)
 
 
 class DataLoader:

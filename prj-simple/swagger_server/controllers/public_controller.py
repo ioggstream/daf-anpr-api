@@ -45,7 +45,7 @@ def get_dictionaries(name=None, limit=10, offset=0, sort=None):  # noqa: E501
         items.append(Dictionary(name=i['index'],
                                 description="TODO",
                                 versions=versions,
-                                last_version=versions[-1],
+                                last_version=versions[-1] if versions else None,
                                 meta=i))
 
     return Dictionaries(
@@ -72,7 +72,7 @@ def get_dictionary(dictionary_name):  # noqa: E501
     return Dictionary(name=dictionary_name,
                       description="TODO",
                       versions=versions,
-                      last_version=versions[-1],
+                      last_version=versions[-1] if versions else None,
                       meta=ret)
 
 
@@ -98,7 +98,11 @@ def get_dictionary_version(dictionary_name, version, name=None, limit=10, offset
     """
     c = Elasticsearch(hosts='elastic')
     if version == 'latest':
-        version = tools.get_index_doctypes(es, dictionary_name)[-1]
+        version = tools.get_index_doctypes(es, dictionary_name)
+    if not version:
+        raise problem(status=404, title=f"No version",
+                      detail=f"No versions for {dictionary_name}")
+    
     res = c.search(index=dictionary_name, doc_type=[version],
                    size=limit, from_=offset,
                    body={"query": {"match_all": {}}})
