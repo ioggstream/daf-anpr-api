@@ -41,10 +41,20 @@ def get_dictionaries(name=None, limit=10, offset=0, sort=None):  # noqa: E501
     c = Elasticsearch(hosts='elastic')
     ret = c.cat.indices(format='json')[offset:offset+limit]
     ret = filter_indexes(ret)
+    items = []
     for i in ret:
-        i['versions'] = get_index_doctypes(c, i['index'])
-    return ret
-
+        versions = sorted(get_index_doctypes(c, i['index']))
+        items.append(Dictionary(name=dictionary_name,
+                      description="TODO",
+                      versions=versions,
+                      last_version=versions[-1],
+                      meta=i)) 
+    
+    return Dictionaries(
+        items=items,
+        offset=offset,
+        offset_next=limit+offset,
+    )
 
 def get_dictionary(dictionary_name):  # noqa: E501
     """Get informations about a dictionary.
@@ -58,8 +68,13 @@ def get_dictionary(dictionary_name):  # noqa: E501
     """
     c = Elasticsearch(hosts='elastic')
     ret = c.cat.indices(index=dictionary_name, format='json')[0]
-    ret['versions'] = get_index_doctypes(c, dictionary_name)
-    return ret
+    versions = sorted(get_index_doctypes(c, dictionary_name))
+    
+    return Dictionary(name=dictionary_name,
+                      description="TODO",
+                      versions=versions,
+                      last_version=versions[-1]
+                      meta=ret)
 
 
 def get_dictionary_version(dictionary_name, version, name=None, limit=10, offset=0, sort=None):  # noqa: E501
@@ -88,12 +103,12 @@ def get_dictionary_version(dictionary_name, version, name=None, limit=10, offset
                    body={"query": {"match_all": {}}})
     print(res)
     items = [ entry_from_doc(hit) for hit in res['hits']['hits']]
-    return {
-        "items": items,
-        "count": res['hits']['total'],
-        "offset": offset,
-        "offset_next": offset+limit,
-        }
+    return Entries(
+        items=items,
+        count=res['hits']['total'],
+        offset=offset,
+        offset_next=offset+limit,
+        )
 
 
 def get_dictionary_meta(dictionary_name):  # noqa: E501

@@ -339,6 +339,7 @@ components:
       - name
       - description
       - last_version
+      - versions
       - uri
       properties:
         name:
@@ -350,12 +351,18 @@ components:
             Which data is contained in the dictionary? Cities? Foreign countries?
             Healtcare codes?
         last_version:
-          type: integer
-          example: 134
+          type: string
+          example: latest
+        versions:
+          type: string
+          example: v134
         uri:
           type: string
           format: uri
           example: http://dictionaries-beta.api.example.com/dictionaries/cities
+        meta:
+          type: object
+          description: meta-informations on the dictionary. May be implementation-specific.
     Table:
       description: |
         Versioned dictionary.
@@ -454,7 +461,7 @@ components:
       - offset
       - offset_next
       properties:
-        item:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/Entry'
