@@ -24,9 +24,11 @@ def upload_dictionary(dictionary_name, body):  # noqa: E501
 
     :rtype: Table
     """
-    if connexion.request.is_json:
-        body = connexion.request.get_json()  # noqa: E501
-        print(body)
+    if not connexion.request.is_json:
+        return problem(status=415, title="Unsupported Media Type",
+                       detail="Bad Content-Type: did you use application/json?")
+    body = connexion.request.get_json()  # noqa: E501
+    print("body: ", body)
     
     es = Elasticsearch(hosts='elastic')
 

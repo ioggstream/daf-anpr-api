@@ -100,7 +100,7 @@ def get_dictionary_version(dictionary_name, version, name=None, limit=10, offset
     if version == 'latest':
         version = tools.get_index_doctypes(es, dictionary_name)
     if not version:
-        raise problem(status=404, title=f"No version",
+        return problem(status=404, title=f"No version",
                       detail=f"No versions for {dictionary_name}")
     
     res = c.search(index=dictionary_name, doc_type=[version],
