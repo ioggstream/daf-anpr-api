@@ -7,16 +7,12 @@ from swagger_server.models.entries import Entries  # noqa: E501
 from swagger_server.models.entry import Entry  # noqa: E501
 from swagger_server.models.inline_response400 import InlineResponse400  # noqa: E501
 from swagger_server.models.tables import Tables  # noqa: E501
-from swagger_server import util
+from swagger_server import util, tools
 
 from connexion import problem
 from elasticsearch import Elasticsearch, exceptions as es_exc
 
 filter_indexes = lambda data: [x for x in data if x['index'] not in ('.kibana',)]
-
-def get_index_doctypes(cli, index):
-    mappings = cli.indices.get_mapping(index=index)
-    return list(mappings[index]['mappings'].keys())
 
 
 def entry_from_doc(doc):
@@ -43,7 +39,7 @@ def get_dictionaries(name=None, limit=10, offset=0, sort=None):  # noqa: E501
     ret = filter_indexes(ret)
     items = []
     for i in ret:
-        versions = sorted(get_index_doctypes(c, i['index']))
+        versions = tools.get_index_doctypes(c, i['index']))
         items.append(Dictionary(name=dictionary_name,
                       description="TODO",
                       versions=versions,
@@ -68,7 +64,7 @@ def get_dictionary(dictionary_name):  # noqa: E501
     """
     c = Elasticsearch(hosts='elastic')
     ret = c.cat.indices(index=dictionary_name, format='json')[0]
-    versions = sorted(get_index_doctypes(c, dictionary_name))
+    versions = tools.get_index_doctypes(c, dictionary_name))
     
     return Dictionary(name=dictionary_name,
                       description="TODO",

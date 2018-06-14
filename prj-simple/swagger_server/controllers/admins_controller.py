@@ -4,11 +4,12 @@ import six
 from swagger_server.models.inline_response400 import InlineResponse400  # noqa: E501
 from swagger_server.models.table import Table  # noqa: E501
 from swagger_server.models.table_data import TableData  # noqa: E501
-from swagger_server import util
+from swagger_server import util, tools
 
 
 from elasticsearch import Elasticsearch, helpers
-
+import json
+from datetime import datetime
 
 def upload_dictionary(dictionary_name, version, body):  # noqa: E501
     """Upload a new (version of a) dictionary eventually creating a new dictionary. The passed csv file contains a trailing line with the expected line count. If the schema does not match previous version, an error is returned. 
@@ -24,14 +25,19 @@ def upload_dictionary(dictionary_name, version, body):  # noqa: E501
     """
     if connexion.request.is_json:
         body = connexion.request.get_json()  # noqa: E501
-        
-    loader = DataLoader('elastic', dictionary_name, args.doc_type, args.id_col)
+    d = datetime.now()
+    es = Elasticsearch(hosts='elastic')
+    
+    versions = tools.get_index_doctypes(es, dictionary_name)
+    new_version = d.isoformat()[:19]
+    if versions[-1] > new_version:
+        raise NotImplementedError(f"Versio too low: {versions[-1]} vs {new_version}")
+    loader = DataLoader('elastic', dictionary_name, new_version, args.id_col)
     if args.action == 'index':
-        inserted, errors = loader.index_data(data)
+        inserted, errors = loader.index_data(body)
         print('loaded {} records'.format(inserted))
 
 
-import json
 
 
 class DataLoader:
